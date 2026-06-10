@@ -39,6 +39,5 @@ env.Append(LIBS=[
 ])
 # Build Targets
 sources = Glob('src/*.cpp')
-library = env.SharedLibrary('godot_project/bin/libtest.linux.template_debug.x86_64.so', sources)
-
+library = env.SharedLibrary("godot_project/addons/ros2_abstandsensor/bin/libtest" + env["suffix"] + ".so", source_files)
 Default(library)

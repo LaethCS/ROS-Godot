@@ -1,7 +1,0 @@
-[configuration]
-entry_symbol = "test_library_init"
-compatibility_minimum = "4.5"
-
-[libraries]
-linux.debug.x86_64 = "res://bin/libtest.linux.template_debug.x86_64.so"
-linux.editor.x86_64 = "res://bin/libtest.linux.template_debug.x86_64.so"
