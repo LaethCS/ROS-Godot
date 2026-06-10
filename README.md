@@ -1,93 +1,92 @@
-# Godot Robosim
+## Über das Projekt
+
+Dieses Plugin ist Teil der Bachelorarbeit mit dem Titel "Konzeption und Entwicklung eines ROS2-fähigen Add-ons für die Godot-Engine zur Integration vereinfachter Robotersimulationen". Es ermöglicht eine latenzarme Echtzeit-Kommunikation zwischen der Godot-Spielengine und dem Industrie-Standard-Robotik-Framework ROS2.
+
+Anstatt auf langsame Netzwerk-Schnittstellen wie WebSockets zu setzen, wurde in C++ ein nativer Echtzeit-Dolmetscher (eine GDExtension) programmiert. Das Plugin enthält als ersten Machbarkeitsnachweis (Proof of Concept) einen virtuellen Abstandssensor (`ros2_abstandsensor`). In der 3D-Simulation schießt dieser Sensor einen unsichtbaren Laserstrahl (RayCast3D) ab, berechnet physikalische Kollisionen und funkt die exakte Entfernung als `std_msgs/Float32` direkt in das ROS2-Netzwerk. Durch eine Drosselung auf die Physik-Engine liefert der Sensor stabile Werte mit exakt 25 Hz.
+
+---
+
+## Systemvoraussetzungen
+
+Die Verteilung dieses GDExtension-Add-ons ist extrem einfach, da lediglich die kompilierte `.so` Bibliothek weitergegeben wird. Für die Nutzung müssen folgende Basis-Systeme installiert sein:
+
+| Komponente | Version / Spezifikation |
+| --- | --- |
+| **Betriebssystem** | Ubuntu 22.04 LTS (Jammy Jellyfish) 
+
+ |
+| **ROS2** | Humble Hawksbill 
+
+ |
+| **Game Engine** | Godot 4.x (z.B. Godot 4.5 für Linux) 
+
+ |
+| **Shell** | Bash 
+
+ |
+
+---
+
+## ⚠️ Wichtiger Start-Hinweis (Kritisch)
+
+Godot darf niemals einfach per Doppelklick über ein Desktop-Icon gestartet werden, da sonst die ROS2-Umgebungsvariablen fehlen und die Engine lautlos im Hintergrund abstürzt. Die Engine muss zwingend aus einem vorbereiteten Terminal gestartet werden.
+
+1. Öffne ein neues Ubuntu-Terminal.
+2. Lade die ROS2-Umgebung für Bash mit `source /opt/ros/humble/setup.bash`.
+
+
+3. Alternativ, falls Zsh genutzt wird, lade die Umgebung mit `source /opt/ros/humble/setup.zsh`.
+
+
+4. Starte die ausführbare Godot-Datei (z.B. `./Godot_v4.5-stable_linux.x86_64`) exakt aus diesem Terminal heraus.
 
 
 
-## Getting started
+---
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+## Installation (Plug-and-Play)
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+Das Plugin ist so konzipiert, dass die gesamte Komplexität der ROS2-Integration für den Nutzer unsichtbar gekapselt ist.
 
-## Add your files
+1. Entpacke die heruntergeladene ZIP-Datei auf dem Rechner.
 
-* [Create](https://docs.gitlab.com/user/project/repository/web_editor/#create-a-file) or [upload](https://docs.gitlab.com/user/project/repository/web_editor/#upload-a-file) files
-* [Add files using the command line](https://docs.gitlab.com/topics/git/add_files/#add-files-to-a-git-repository) or push an existing Git repository with the following command:
 
-```
-cd existing_repo
-git remote add origin https://gitlab.hs-bochum.de/solarswarm/godot-robosim.git
-git branch -M main
-git push -uf origin main
-```
+2. Öffne ein leeres oder bestehendes Godot-Projekt über das vorbereitete ROS2-Terminal.
+3. Ziehe den entpackten Ordner `addons` (welcher den Unterordner `ros2_abstandsensor` enthält) per Drag-and-Drop direkt in das Dateisystem-Fenster (FileSystem Dock) des Godot-Editors.
 
-## Integrate with your tools
 
-* [Set up project integrations](https://gitlab.hs-bochum.de/solarswarm/godot-robosim/-/settings/integrations)
+4. Klicke oben in der Godot-Menüleiste auf **Projekt** und wähle **Projekteinstellungen** aus.
 
-## Collaborate with your team
 
-* [Invite team members and collaborators](https://docs.gitlab.com/user/project/members/)
-* [Create a new merge request](https://docs.gitlab.com/user/project/merge_requests/creating_merge_requests/)
-* [Automatically close issues from merge requests](https://docs.gitlab.com/user/project/issues/managing_issues/#closing-issues-automatically)
-* [Enable merge request approvals](https://docs.gitlab.com/user/project/merge_requests/approvals/)
-* [Set auto-merge](https://docs.gitlab.com/user/project/merge_requests/auto_merge/)
+5. Wechsle im sich öffnenden Fenster auf den Reiter **Plugins**.
 
-## Test and Deploy
 
-Use the built-in continuous integration in GitLab.
+6. Setze ganz rechts den Haken bei **Aktivieren** (Enable), um das Plugin offiziell anzumelden.
 
-* [Get started with GitLab CI/CD](https://docs.gitlab.com/ci/quick_start/)
-* [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/user/application_security/sast/)
-* [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/topics/autodevops/requirements/)
-* [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/user/clusters/agent/)
-* [Set up protected environments](https://docs.gitlab.com/ci/environments/protected_environments/)
 
-***
 
-# Editing this README
+---
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
+## Verwendung & Testen
 
-## Suggestions for a good README
+Sobald das Plugin aktiviert ist, kann der Sensor völlig ohne C++ Kenntnisse in der Engine genutzt werden.
 
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+1. Öffne eine beliebige 3D-Szene im Godot-Editor.
 
-## Name
-Choose a self-explaining name for your project.
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+2. Drücke **Strg + A** (oder klicke auf das Plus-Symbol "Knoten hinzufügen") und tippe `TestSensor` in die Suchleiste ein.
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+3. Platziere den C++ Knoten in der Welt und platziere ein Objekt (z.B. einen Würfel mit `StaticBody3D` und `CollisionShape3D`) in seinem Strahl.
 
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
 
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
+4. Drücke in Godot auf den **Play**-Button (F5), um die Simulation zu starten.
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
+5. Öffne ein zweites, komplett neues Terminal und source die ROS2-Umgebung erneut.
 
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
+6. Tippe den Befehl `ros2 topic echo /sensor_distance` ein, um dich live auf den Kanal des Godot-Sensors aufzuschalten.
 
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
 
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
-
-## License
-For open source projects, say how it is licensed.
-
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+7. Beobachte das Terminal: Sobald das Hindernis in Godot bewegt wird, kommen die Distanz-Daten in Echtzeit im Ubuntu-Terminal an.
