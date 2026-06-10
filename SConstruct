@@ -16,7 +16,7 @@ env.Append(CPPPATH=[
 ])
 env.Append(LIBPATH=['godot-cpp/bin'])
 
-# 2. NEU: ROS2 Humble Include-Pfade (Der smarte Automatik-Weg!)
+# 2. ROS2 Humble Include-Pfade
 # Wir weisen Python an, einfach JEDEN Ordner in /opt/ros/humble/include zu laden.
 ros2_include_dir = '/opt/ros/humble/include'
 if os.path.exists(ros2_include_dir):

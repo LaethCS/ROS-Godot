@@ -28,23 +28,30 @@ transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, 0, 0, 0)
 mesh = SubResource("BoxMesh_a202f")
 surface_material_override/0 = SubResource("StandardMaterial3D_noarx")
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+[node name="collide_obj" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 4)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="collide_obj"]
 mesh = SubResource("BoxMesh_4xowi")
+skeleton = NodePath("../..")
 surface_material_override/0 = SubResource("StandardMaterial3D_a202f")
 
-[node name="StaticBody3D" type="StaticBody3D" parent="MeshInstance3D"]
+[node name="StaticBody3D" type="StaticBody3D" parent="collide_obj/MeshInstance3D"]
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="MeshInstance3D/StaticBody3D"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="collide_obj/MeshInstance3D/StaticBody3D"]
 shape = SubResource("BoxShape3D_4xowi")
 
 [node name="Camera3D" type="Camera3D" parent="."]
 transform = Transform3D(-0.77162457, 0, 0.6360783, 0, 1, 0, -0.6360783, 0, -0.77162457, 5.535328, 0.39499998, -0.5906544)
 
-[node name="MeshInstance3D2" type="MeshInstance3D" parent="."]
+[node name="Ground" type="Node3D" parent="."]
+
+[node name="MeshInstance3D2" type="MeshInstance3D" parent="Ground"]
 transform = Transform3D(15, 0, 0, 0, 15, 0, 0, 0, 15, 0, -1, 0)
 mesh = SubResource("PlaneMesh_4xowi")
+skeleton = NodePath("../..")
 
-[node name="StaticBody3D" type="StaticBody3D" parent="MeshInstance3D2"]
+[node name="StaticBody3D" type="StaticBody3D" parent="Ground/MeshInstance3D2"]
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 0.57357645, 0.81915206, 0, -0.81915206, 0.57357645, -4.41, 17.65, 0)
