@@ -6,7 +6,6 @@ using namespace godot;
 TestSensor::TestSensor() {}
 TestSensor::~TestSensor() {}
 
-// HIER WAR DER FEHLER: Diese Funktion hat gefehlt!
 void TestSensor::_bind_methods() {}
 
 void TestSensor::_ready() {
