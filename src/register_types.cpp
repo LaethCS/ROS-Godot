@@ -1,5 +1,7 @@
 #include "register_types.h"
 #include "test_node.h"
+#include "test_sensor.h"
+
 #include <gdextension_interface.h>
 #include <godot_cpp/core/defs.hpp>
 #include <godot_cpp/godot.hpp>
@@ -10,8 +12,9 @@ void initialize_test_module(ModuleInitializationLevel p_level) {
     if (p_level != MODULE_INITIALIZATION_LEVEL_SCENE) {
         return;
     }
-    // Wir registrieren unseren neuen TestNode in der ClassDB
+    
     ClassDB::register_class<TestNode>();
+    ClassDB::register_class<TestSensor>(); 
 }
 
 void uninitialize_test_module(ModuleInitializationLevel p_level) {
@@ -21,7 +24,6 @@ void uninitialize_test_module(ModuleInitializationLevel p_level) {
 }
 
 extern "C" {
-// Der offizielle Einstiegspunkt für Godot
 GDExtensionBool GDE_EXPORT test_library_init(GDExtensionInterfaceGetProcAddress p_get_proc_address, const GDExtensionClassLibraryPtr p_library, GDExtensionInitialization *r_initialization) {
     godot::GDExtensionBinding::InitObject init_obj(p_get_proc_address, p_library, r_initialization);
 

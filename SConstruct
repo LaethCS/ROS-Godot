@@ -29,9 +29,14 @@ env.Append(LIBS=[
     'godot-cpp.linux.template_debug.x86_64', 
     'rclcpp',
     'rcutils',
-    'rcl' # rcl als Bibliothek sicherheitshalber hinzugefügt
+    'rcl',
+    # HIER IST DIE KORREKTUR: Die exakten ROS2-Namen für Standard-Nachrichten
+    'std_msgs__rosidl_typesupport_cpp', 
+    'std_msgs__rosidl_typesupport_c',
+    'std_msgs__rosidl_generator_c',
+    'rosidl_typesupport_c',   
+    'rosidl_typesupport_cpp'  
 ])
-
 # Build Targets
 sources = Glob('src/*.cpp')
 library = env.SharedLibrary('godot_project/bin/libtest.linux.template_debug.x86_64.so', sources)

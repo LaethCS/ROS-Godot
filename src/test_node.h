@@ -6,16 +6,15 @@
 namespace godot {
 
 class TestNode : public Node3D {
-    GDCLASS(TestNode, Node3D); // Magisches Godot-Makro
+    GDCLASS(TestNode, Node3D);
 
 protected:
-    static void _bind_methods(); // Hier melden wir Funktionen an Godot an
+    static void _bind_methods();
 
 public:
     TestNode();
     ~TestNode();
 
-    // Diese Funktion wird von Godot aufgerufen, wenn der Node bereit ist
     void _ready() override; 
 };
 
