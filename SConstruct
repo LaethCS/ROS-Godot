@@ -23,21 +23,30 @@ if os.path.exists(ros2_include_dir):
     ros2_paths = [os.path.join(ros2_include_dir, d) for d in os.listdir(ros2_include_dir) if os.path.isdir(os.path.join(ros2_include_dir, d))]
     env.Append(CPPPATH=ros2_paths)
 
+
 # 3. ROS2 Bibliotheks-Pfade & Linker
 env.Append(LIBPATH=['/opt/ros/humble/lib'])
 env.Append(LIBS=[
     'godot-cpp.linux.template_debug.x86_64', 
-    'rclcpp',
-    'rcutils',
-    'rcl',
-    # HIER IST DIE KORREKTUR: Die exakten ROS2-Namen für Standard-Nachrichten
+    'rclcpp', 
+    'rcutils', 
+    'rcl', 
     'std_msgs__rosidl_typesupport_cpp', 
     'std_msgs__rosidl_typesupport_c',
     'std_msgs__rosidl_generator_c',
-    'rosidl_typesupport_c',   
-    'rosidl_typesupport_cpp'  
+    'sensor_msgs__rosidl_generator_c',
+    'sensor_msgs__rosidl_typesupport_cpp', 
+    'sensor_msgs__rosidl_typesupport_c',
+    # --- HIER NEU HINZUFÜGEN ---
+    'tf2_msgs__rosidl_typesupport_cpp',
+    'tf2_msgs__rosidl_typesupport_c',
+    'tf2_msgs__rosidl_generator_c',
+    'tf2'
 ])
+
+if "suffix" not in env:
+    env["suffix"] = ".linux.template_debug.x86_64"
+    
 # Build Targets
-sources = Glob('src/*.cpp')
+source_files = Glob('src/*.cpp') # Variable heißt jetzt source_files
 library = env.SharedLibrary("godot_project/addons/ros2_abstandsensor/bin/libtest" + env["suffix"] + ".so", source_files)
-Default(library)

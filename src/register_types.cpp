@@ -1,10 +1,11 @@
 #include "register_types.h"
-#include "test_node.h"
+#include "ros_bridge.hpp"
 #include "test_sensor.h"
 
 #include <gdextension_interface.h>
 #include <godot_cpp/core/defs.hpp>
 #include <godot_cpp/godot.hpp>
+#include "lidar_sensor.hpp"
 
 using namespace godot;
 
@@ -13,8 +14,9 @@ void initialize_test_module(ModuleInitializationLevel p_level) {
         return;
     }
     
-    ClassDB::register_class<TestNode>();
+    ClassDB::register_class<RosBridge>();
     ClassDB::register_class<TestSensor>(); 
+    ClassDB::register_class<LidarSensor>(); 
 }
 
 void uninitialize_test_module(ModuleInitializationLevel p_level) {
