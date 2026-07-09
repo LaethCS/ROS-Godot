@@ -12,11 +12,10 @@ using namespace godot;
 LidarSensor::LidarSensor() {
     random_engine.seed(std::random_device{}());
 
-    // Debug Mesh Setup (Einmalige Initialisierung)
+    // Debug Mesh Setup
     debug_mesh.instantiate();
     debug_material.instantiate();
     
-    // Rotes, unbeleuchtetes Laser-Material erstellen
     debug_material->set_albedo(Color(1.0, 0.0, 0.0, 0.5)); 
     debug_material->set_shading_mode(StandardMaterial3D::SHADING_MODE_UNSHADED);
     debug_material->set_flag(StandardMaterial3D::FLAG_DISABLE_DEPTH_TEST, false);
@@ -27,12 +26,9 @@ LidarSensor::~LidarSensor() {}
 void LidarSensor::_ready() {
     initialize_ray_angles();
 
-    // Erstelle ein unsichtbares Node für die Linien und hänge es an
     debug_mesh_instance = memnew(MeshInstance3D);
     debug_mesh_instance->set_mesh(debug_mesh);
     debug_mesh_instance->set_material_override(debug_material);
-    
-    // Nutze globale Koordinaten, damit die Linien beim Drehen des Roboters korrekt bleiben
     debug_mesh_instance->set_as_top_level(true); 
     add_child(debug_mesh_instance);
 }
@@ -58,7 +54,9 @@ void LidarSensor::initialize_ray_angles() {
 
     for (int i = 0; i < ray_count; ++i) {
         double current_angle = angle_min + (i * angle_increment);
-        Vector3 dir = Vector3(std::sin(current_angle), 0.0, -std::cos(current_angle));
+        
+        // KORREKTUR: Minuszeichen hinzugefügt, damit Array-Index 0 rechts beginnt (ROS2-Konformität)
+        Vector3 dir = Vector3(-std::sin(current_angle), 0.0, -std::cos(current_angle));
         local_ray_directions.push_back(dir);
     }
 }
@@ -75,7 +73,6 @@ void LidarSensor::set_angle_increment_degrees(double p_val) {
 
 void LidarSensor::set_show_debug_laser(bool p_val) {
     show_debug_laser = p_val;
-    // Wenn ausgeschaltet, sofort alle Linien löschen
     if (!show_debug_laser && debug_mesh.is_valid()) {
         debug_mesh->clear_surfaces(); 
     }
@@ -97,7 +94,6 @@ void LidarSensor::_physics_process(double delta) {
     noise_distribution = std::normal_distribution<double>(0.0, noise_stddev);
     std::vector<float> scan_ranges(ray_count, 0.0f);
 
-    // Vorbereitung für das Zeichnen der Debug-Linien
     if (show_debug_laser && debug_mesh.is_valid()) {
         debug_mesh->clear_surfaces();
         debug_mesh->surface_begin(Mesh::PRIMITIVE_LINES);
@@ -140,7 +136,7 @@ void LidarSensor::_physics_process(double delta) {
         debug_mesh->surface_end();
     }
 
-    // --- HIER IST DIE INTEGRATION MIT DER ROSBRIDGE ---
+    // ROS-Bridge aufrufen
     if (RosBridge::get_singleton()) {
         RosBridge::get_singleton()->publish_lidar_data(
             "lidar_link", 
@@ -150,7 +146,8 @@ void LidarSensor::_physics_process(double delta) {
             angle_increment, 
             range_min, 
             range_max, 
-            update_rate
+            update_rate,
+            global_transform 
         );
     }
     else {
@@ -175,7 +172,6 @@ void LidarSensor::_bind_methods() {
     ClassDB::bind_method(D_METHOD("get_range_max"), &LidarSensor::get_range_max);
     ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "range_max"), "set_range_max", "get_range_max");
 
-    // Der neue Debug-Schalter im Inspector
     ClassDB::bind_method(D_METHOD("set_show_debug_laser", "p_val"), &LidarSensor::set_show_debug_laser);
     ClassDB::bind_method(D_METHOD("get_show_debug_laser"), &LidarSensor::get_show_debug_laser);
     ADD_PROPERTY(PropertyInfo(Variant::BOOL, "show_debug_laser"), "set_show_debug_laser", "get_show_debug_laser");

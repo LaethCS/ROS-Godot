@@ -12,7 +12,7 @@ albedo_color = Color(1, 0, 0, 1)
 [node name="Node3D" type="Node3D"]
 
 [node name="collide_obj" type="Node3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 4)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.38280368, 0, 2.541892)
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="collide_obj"]
 mesh = SubResource("BoxMesh_4xowi")
