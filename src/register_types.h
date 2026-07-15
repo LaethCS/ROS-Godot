@@ -5,6 +5,7 @@
 
 using namespace godot;
 
+// Deklarationen für die Modul-Initialisierung
 void initialize_test_module(ModuleInitializationLevel p_level);
 void uninitialize_test_module(ModuleInitializationLevel p_level);
 

@@ -1,4 +1,8 @@
-[gd_scene load_steps=5 format=3 uid="uid://bc2w1q1qmjays"]
+[gd_scene load_steps=11 format=3 uid="uid://bc2w1q1qmjays"]
+
+[ext_resource type="Script" uid="uid://byynvlrc2p4tv" path="res://RobotController.gd" id="1_a202f"]
+[ext_resource type="Script" uid="uid://bcnbuwmh168yg" path="res://collide_obj.gd" id="1_noarx"]
+[ext_resource type="Script" uid="uid://cvd14ovgtuv7h" path="res://ros_2_publisher.gd" id="3_a0tk4"]
 
 [sub_resource type="BoxMesh" id="BoxMesh_4xowi"]
 
@@ -9,10 +13,18 @@ albedo_color = Color(1, 0, 0, 1)
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_4xowi"]
 
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_a0tk4"]
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_a202f"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_noarx"]
+albedo_color = Color(0, 0, 1, 1)
+
 [node name="Node3D" type="Node3D"]
 
 [node name="collide_obj" type="Node3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.38280368, 0, 2.541892)
+script = ExtResource("1_noarx")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="collide_obj"]
 mesh = SubResource("BoxMesh_4xowi")
@@ -42,6 +54,24 @@ transform = Transform3D(1, 0, 0, 0, 0.57357645, 0.81915206, 0, -0.81915206, 0.57
 [node name="LidarSensor" type="LidarSensor" parent="."]
 fov_degrees = 106.0
 show_debug_laser = true
-transform = Transform3D(-0.25881904, 0, 0.9659258, 0, 1, 0, -0.9659258, 0, -0.25881904, 2.2579532, -0.29705286, 3.0705109)
+topic_name = "/scan_von_inspecor"
+transform = Transform3D(-0.23580368, 0, 0.9718008, 0, 1, 0, -0.9718008, 0, -0.23580368, 2.5963652, -0.189749, 0.48791575)
 
-[node name="RosBridge" type="RosBridge" parent="."]
+[node name="CharacterBody3D" type="CharacterBody3D" parent="."]
+script = ExtResource("1_a202f")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="CharacterBody3D"]
+shape = SubResource("CapsuleShape3D_a0tk4")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="CharacterBody3D"]
+mesh = SubResource("CapsuleMesh_a202f")
+surface_material_override/0 = SubResource("StandardMaterial3D_noarx")
+
+[node name="ROS2Publisher" type="ROS2Publisher" parent="."]
+script = ExtResource("3_a0tk4")
+
+[node name="TestSensor" type="TestSensor" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.6488638, 3.4490786, -3.797029)
+
+[node name="RayCast3D" type="RayCast3D" parent="TestSensor"]
+target_position = Vector3(0, 5.08, 0)

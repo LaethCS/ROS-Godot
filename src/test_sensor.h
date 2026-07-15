@@ -1,19 +1,14 @@
-#ifndef TEST_SENSOR_H
-#define TEST_SENSOR_H
+#ifndef TEST_SENSOR_HPP
+#define TEST_SENSOR_HPP
 
+#include "ros2_sensor_base.hpp" // Unsere Basis-Klasse
 #include <godot_cpp/classes/ray_cast3d.hpp>
-#include <rclcpp/rclcpp.hpp>
 #include <std_msgs/msg/float32.hpp>
 
 namespace godot {
 
-class TestSensor : public RayCast3D {
-    GDCLASS(TestSensor, RayCast3D)
-
-private:
-    std::shared_ptr<rclcpp::Node> ros_node;
-    rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr publisher;
-    double time_passed = 0.0; // Unser neuer Timer
+class TestSensor : public ROS2SensorBase {
+    GDCLASS(TestSensor, ROS2SensorBase) // Erbt von ROS2SensorBase
 
 protected:
     static void _bind_methods();
@@ -23,7 +18,14 @@ public:
     ~TestSensor();
 
     void _ready() override;
-    void _physics_process(double delta) override; // Hier gewechselt!
+    
+    // Die Pflicht-Methoden der Basis-Klasse
+    void setup_publisher() override;
+    void update_data() override;
+
+private:
+    RayCast3D* raycast;
+    rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr float_publisher;
 };
 
 }

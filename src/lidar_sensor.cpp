@@ -4,15 +4,21 @@
 #include <godot_cpp/classes/physics_direct_space_state3d.hpp>
 #include <godot_cpp/classes/world3d.hpp>
 #include <godot_cpp/classes/physics_ray_query_parameters3d.hpp>
+#include <godot_cpp/classes/engine.hpp>
+#include <godot_cpp/variant/utility_functions.hpp>
 #include <godot_cpp/core/math.hpp> 
 #include <algorithm> 
+#include <limits>
 
 using namespace godot;
 
 LidarSensor::LidarSensor() {
     random_engine.seed(std::random_device{}());
 
-    // Debug Mesh Setup
+    // Standardkonfiguration für das Framework festlegen
+    topic_name = "/scan";
+    frequency = 20.0; // Entspricht der alten update_rate von 0.05s
+
     debug_mesh.instantiate();
     debug_material.instantiate();
     
@@ -24,6 +30,12 @@ LidarSensor::LidarSensor() {
 LidarSensor::~LidarSensor() {}
 
 void LidarSensor::_ready() {
+    if (Engine::get_singleton()->is_editor_hint()) return;
+
+    // 1. Basis-Klasse anweisen, die RosBridge-Verbindung aufzubauen
+    ROS2SensorBase::_ready();
+
+    // 2. Internes LiDAR-Setup ausführen
     initialize_ray_angles();
 
     debug_mesh_instance = memnew(MeshInstance3D);
@@ -33,60 +45,17 @@ void LidarSensor::_ready() {
     add_child(debug_mesh_instance);
 }
 
-void LidarSensor::initialize_ray_angles() {
-    local_ray_directions.clear();
-    
-    if (angle_increment_degrees <= 0.001) {
-        angle_increment_degrees = 0.001;
-    }
-    if (fov_degrees <= 1.0) {
-        fov_degrees = 1.0;
-    }
-
-    double fov_rad = Math::deg_to_rad(fov_degrees);
-    angle_increment = Math::deg_to_rad(angle_increment_degrees);
-    
-    angle_min = -fov_rad / 2.0;
-    angle_max = fov_rad / 2.0;
-
-    ray_count = static_cast<int>(std::floor((angle_max - angle_min) / angle_increment)) + 1;
-    local_ray_directions.reserve(ray_count);
-
-    for (int i = 0; i < ray_count; ++i) {
-        double current_angle = angle_min + (i * angle_increment);
-        
-        // KORREKTUR: Minuszeichen hinzugefügt, damit Array-Index 0 rechts beginnt (ROS2-Konformität)
-        Vector3 dir = Vector3(-std::sin(current_angle), 0.0, -std::cos(current_angle));
-        local_ray_directions.push_back(dir);
+void LidarSensor::setup_publisher() {
+    if (ros_node) {
+        // Nutzt jetzt dynamisch das Inspector-Feld!
+        lidar_publisher = ros_node->create_publisher<sensor_msgs::msg::LaserScan>(topic_name.utf8().get_data(), 10);
+        UtilityFunctions::print("LiDAR-Publisher dynamisch erstellt auf Topic: ", topic_name);
     }
 }
 
-void LidarSensor::set_fov_degrees(double p_val) {
-    fov_degrees = p_val;
-    initialize_ray_angles(); 
-}
-
-void LidarSensor::set_angle_increment_degrees(double p_val) {
-    angle_increment_degrees = p_val;
-    initialize_ray_angles(); 
-}
-
-void LidarSensor::set_show_debug_laser(bool p_val) {
-    show_debug_laser = p_val;
-    if (!show_debug_laser && debug_mesh.is_valid()) {
-        debug_mesh->clear_surfaces(); 
-    }
-}
-
-void LidarSensor::_physics_process(double delta) {
-    update_timer += delta;
-    if (update_timer < update_rate) {
-        return;
-    }
-    update_timer = 0.0;
-
+void LidarSensor::update_data() {
     PhysicsDirectSpaceState3D *space_state = get_world_3d()->get_direct_space_state();
-    if (!space_state) return;
+    if (!space_state || !lidar_publisher) return;
 
     Transform3D global_transform = get_global_transform();
     Vector3 origin = global_transform.origin;
@@ -136,22 +105,67 @@ void LidarSensor::_physics_process(double delta) {
         debug_mesh->surface_end();
     }
 
-    // ROS-Bridge aufrufen
+    // Nachricht befüllen und über den eigenen Publisher absenden
+    auto msg = sensor_msgs::msg::LaserScan();
+    msg.header.stamp = ros_node->now();
+    msg.header.frame_id = "lidar_link";
+    msg.angle_min = angle_min;
+    msg.angle_max = angle_max;
+    msg.angle_increment = angle_increment;
+    msg.time_increment = 0.0;
+    msg.scan_time = (1.0 / frequency);
+    msg.range_min = range_min;
+    msg.range_max = range_max;
+    msg.ranges = scan_ranges;
+
+    lidar_publisher->publish(msg);
+
+    // Die Koordinatentransformation (TF) zur Bridge delegieren
     if (RosBridge::get_singleton()) {
-        RosBridge::get_singleton()->publish_lidar_data(
-            "lidar_link", 
-            scan_ranges, 
-            angle_min, 
-            angle_max, 
-            angle_increment, 
-            range_min, 
-            range_max, 
-            update_rate,
-            global_transform 
-        );
+        RosBridge::get_singleton()->send_tf_transform("lidar_link", global_transform);
     }
-    else {
-        UtilityFunctions::printerr("FEHLER: Bridge Singleton nicht gefunden!");
+}
+
+void LidarSensor::initialize_ray_angles() {
+    local_ray_directions.clear();
+    
+    if (angle_increment_degrees <= 0.001) {
+        angle_increment_degrees = 0.001;
+    }
+    if (fov_degrees <= 1.0) {
+        fov_degrees = 1.0;
+    }
+
+    double fov_rad = Math::deg_to_rad(fov_degrees);
+    angle_increment = Math::deg_to_rad(angle_increment_degrees);
+    
+    angle_min = -fov_rad / 2.0;
+    angle_max = fov_rad / 2.0;
+
+    ray_count = static_cast<int>(std::floor((angle_max - angle_min) / angle_increment)) + 1;
+    local_ray_directions.reserve(ray_count);
+
+    for (int i = 0; i < ray_count; ++i) {
+        double current_angle = angle_min + (i * angle_increment);
+        Vector3 dir = Vector3(-std::sin(current_angle), 0.0, -std::cos(current_angle));
+        local_ray_directions.push_back(dir);
+    }
+}
+
+void LidarSensor::set_fov_degrees(double p_val) {
+    fov_degrees = p_val;
+    initialize_ray_angles(); 
+}
+
+void LidarSensor::set_angle_increment_degrees(double p_val) {
+    angle_increment_degrees = p_val;
+    initialize_ray_angles(); 
+}
+
+void LidarSensor::set_show_debug_laser(bool p_val) {
+    show_debug_laser = p_val;
+    if (!show_debug_laser && debug_mesh.is_valid()) {
+        debug_mesh->clear_surfaces(); 
     }
 }
 

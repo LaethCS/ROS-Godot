@@ -15,6 +15,10 @@ run/main_scene="uid://bc2w1q1qmjays"
 config/features=PackedStringArray("4.5", "Mobile")
 config/icon="res://icon.svg"
 
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/ros2_abstandsensor/plugin.cfg")
+
 [rendering]
 
 renderer/rendering_method="mobile"

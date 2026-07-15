@@ -4,6 +4,9 @@ import sys
 
 env = Environment()
 
+# RPATH zu den ROS2 Humble Bibliotheken hart eincodieren
+env.Append(LINKFLAGS=['-Wl,-rpath,/opt/ros/humble/lib'])
+
 # Compiler Flags für C++17
 env.Append(CXXFLAGS=['-std=c++17', '-fPIC'])
 
@@ -31,18 +34,19 @@ env.Append(LIBS=[
     'rclcpp',
     'rcutils',
     'rcl',
-    # Standard-Nachrichten
+    # Diese Bibliotheken sind die Arbeitstiere für Nachrichten-Typen
     'std_msgs__rosidl_typesupport_cpp',
     'std_msgs__rosidl_typesupport_c',
-    # Sensor-Nachrichten (LaserScan)
     'sensor_msgs__rosidl_typesupport_cpp',
     'sensor_msgs__rosidl_typesupport_c',
-    
-    # Für den TF-Broadcaster
+    'geometry_msgs__rosidl_typesupport_cpp',
+    'geometry_msgs__rosidl_typesupport_c',
+    # TF2 Bibliotheken für deine LiDAR-Transformationen
     'tf2_ros',
     'tf2',
-    'geometry_msgs__rosidl_typesupport_cpp',
-    'geometry_msgs__rosidl_typesupport_c'
+    # Basis ROSIDL Library
+    'rosidl_typesupport_cpp',
+    'rosidl_typesupport_c'
 ])
 
 if "suffix" not in env:
