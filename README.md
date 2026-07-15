@@ -4,26 +4,44 @@
 
 Dieses Plugin ist Teil der Bachelorarbeit mit dem Titel "Konzeption und Entwicklung eines ROS2-fähigen Add-ons für die Godot-Engine zur Integration vereinfachter Robotersimulationen". Es ermöglicht eine latenzarme Echtzeit-Kommunikation zwischen der Godot-Spielengine und dem Industrie-Standard-Robotik-Framework ROS2.
 
-Anstatt auf langsame Netzwerk-Schnittstellen wie WebSockets zu setzen, wurde in C++ ein nativer Echtzeit-Dolmetscher (eine GDExtension) programmiert. 
+Anstatt auf langsame, unzuverlässige Netzwerk-Umwege wie WebSockets zu setzen, wurde in C++ ein nativer Echtzeit-Dolmetscher als **GDExtension** programmiert. Das Projekt bietet eine hochperformante Middleware-Brücke, die komplexe ROS2-Strukturen abstrahiert und für Simulationen innerhalb von Godot per Plug-and-Play zugänglich macht.
 
-Das Add-on bringt direkt **zwei einsatzbereite Proof-of-Concept-Sensoren (Plug-and-Play)** mit, die ohne C++-Kenntnisse sofort in Godot genutzt werden können:
+---
 
-### 1. Virtueller 2D-LiDAR-Sensor (`LidarSensor`) - *Komplexer PoC*
-Dieser Sensor simuliert einen echten rotierenden Laserscanner für Navigations- und SLAM-Aufgaben.
-* **Funktionsweise:** Tastet die Umgebung über rotierende bzw. gefächerte physikalische Strahlen ab und berechnet in Echtzeit die exakten Kollisionspunkte zu Hindernissen.
-* **Datenübertragung:** Konvertiert die gemessenen Abstände direkt in das standardisierte, industrielle Datenformat **`sensor_msgs/msg/LaserScan`**.
-* **Frequenz & Netz:** Die Daten werden threadsicher direkt in das ROS2-DDS-Netzwerk auf das Topic **/scan** gefunkt. Damit ist dieser Sensor sofort kompatibel mit SLAM-Algorithmen und kann direkt in **RViz** visualisiert werden.
+## Kern-Architektur & Komponenten
 
-### 2. Virtueller Abstandssensor (`TestSensor`) - *Einfacher PoC*
-* **Funktionsweise:** Dieser C++ Knoten baut auf einem untergeordneten Godot **`RayCast3D`**-Kindknoten auf. Er schießt einen unsichtbaren Laserstrahl nach vorne ab, nutzt die physikalische Kollisionsabfrage von Godot und berechnet die exakte Distanz zu einem physischen Hindernis.
-* **Datenübertragung:** Sendet die gemessene Entfernung als einfache Fließkommazahl im Format **`std_msgs/msg/Float32`** direkt in das ROS2-Netzwerk auf das Topic **/sensor_distance**.
-* **Synchronisation:** Durch eine feste Drosselung auf die Physik-Engine (Akkumulator-Logik) liefert der Sensor stabile Werte mit exakt 25 Hz, um ein Flackern oder Desynchronisationen zwischen Render-Frames und Physik-Schritten zu verhindern.
+Das Framework ist modular aufgebaut und trennt die Low-Level-Kommunikation strikt von der High-Level-Logik der Game Engine. Es basiert auf drei tragenden Säulen:
+
+### 1. Das Kommunikations-Zentrum (`RosBridge`)
+Die Klasse `RosBridge` bildet das datentechnische Rückgrat des gesamten Plugins.
+* **Multithreading:** Sie kapselt den ROS2-Ausführungskontext und führt den Executor-Loop (`spin_ros2`) in einem dedizierten Hintergrund-Thread aus. Dadurch bleibt die Render-Performance von Godot völlig unbeeinflusst von der Netzwerklast.
+* **Bidirektionalität & Thread-Sicherheit:** Über `RosBridge` laufen sowohl Publisher als auch Subscriber zusammen. Sie lauscht beispielsweise auf Steuersignale wie `/cmd_vel` (`geometry_msgs/msg/Twist`) und puffert eintreffende Daten asynchron ab. Der Datenzugriff zwischen dem ROS2-Thread und dem synchronen Physik-Thread von Godot wird über `std::mutex` strikt abgesichert, um Race Conditions zu verhindern.
+* **TF-Broadcasting:** `RosBridge` übernimmt das dynamische Broadcasting des Transformationsbaums (TF2) zwischen Simulations-Koordinatensystemen (`base_link`, `lidar_link`), wodurch die Weltdaten direkt mit Tools wie RViz oder Nav2 kompatibel sind.
+
+### 2. Die C++ Sensor-Basisklasse (`ROS2SensorBase`)
+Um die Implementierung neuer Sensortypen zu vereinheitlichen, erben alle simulierten Sensoren von der abstrakten Basisklasse `ROS2SensorBase`.
+* **Lifecycle-Management:** Sie automatisiert die Node-Registrierung an der zentralen `RosBridge` und hält den Boilerplate-Code für Entwickler minimal.
+* **Frequenz-Synchronisation:** Da Godots Render-Schleife (`_process`) variabel ist, physikalische Sensoren aber feste Abtastraten erfordern, implementiert `ROS2SensorBase` eine akkumulatorbasierte Zeit-Drosselung. Dadurch arbeiten alle abgeleiteten Sensoren mit exakt definierten, stabilen Frequenzen (z. B. 25 Hz), unabhängig von den Frames per Second (FPS) des Grafikrechners.
+
+### 3. Der ROS2 Message Builder (`ROS2Publisher`)
+Der `ROS2Publisher` dient als universelle Schnittstelle zur Datenübertragung und fungiert als flexibler Nachrichtengenerator.
+* **Editor-Introspektion (DX):** Über Godots Reflexionsmechanismus (`_bind_methods` und `ADD_PROPERTY`) macht der Knoten Parameter wie Topic-Namen, Frame-IDs und QoS-Profile direkt im grafischen Godot-Inspector (GUI) konfigurierbar.
+* **GDScript-Anbindung:** Er konvertiert eintreffende Datenströme dynamisch in das Ziel-ROS2-Nachrichtenformat. Entwickler können somit Sensordaten oder benutzerdefinierte Zustände via **GDScript** über Standard-Godot-Signale (z. B. `emit_signal("on_data_ready")`) direkt ins DDS-Netzwerk publizieren, ohne C++ anfassen zu müssen.
+
+---
+
+## Enthaltene Proof-of-Concept-Sensoren
+
+Das Add-on liefert zwei einsatzbereite Sensorknoten mit, die die Mächtigkeit der Architektur demonstrieren:
+
+* **`LidarSensor` (Komplexer PoC):** Erbt von `ROS2SensorBase` und simuliert einen rotierenden Laserscanner. Er tastet die Umgebung über ein Array aus physikalischen `RayCast3D`-Strahlen ab, berechnet Distanzen und transformiert diese in eine standardisierte **`sensor_msgs/msg/LaserScan`**-Nachricht, die auf dem Topic `/scan` veröffentlicht wird.
+* **`TestSensor` (Einfacher PoC):** Ein Single-Point-Distanzmesser, der auf einem zugewiesenen `RayCast3D`-Kindknoten aufbaut. Er ermittelt die lineare Distanz zu einem Objekt und publiziert den Wert als **`std_msgs/msg/Float32`** auf dem Topic `/sensor_distance` mit stabilen 25 Hz.
 
 ---
 
 ## Systemvoraussetzungen
 
-Die Verteilung dieses GDExtension-Add-ons ist extrem einfach, da lediglich die kompilierte `.so` Bibliothek weitergegeben wird. Für die Nutzung müssen folgende Basis-Systeme installiert sein:
+Die Verteilung dieses GDExtension-Add-ons ist extrem effizient, da lediglich die kompilierte `.so` Bibliothek weitergegeben wird. 
 
 | Komponente | Version / Spezifikation |
 | --- | --- |
@@ -36,41 +54,34 @@ Die Verteilung dieses GDExtension-Add-ons ist extrem einfach, da lediglich die k
 
 ## ⚠️ Wichtiger Start-Hinweis (Kritisch)
 
-Godot darf **niemals** einfach per Doppelklick über ein Desktop-Icon gestartet werden, da sonst die ROS2-Umgebungsvariablen fehlen und die Engine lautlos im Hintergrund abstürzt oder das GDExtension-Plugin nicht geladen werden kann. Die Engine muss zwingend aus einem vorbereiteten Terminal gestartet werden:
 
 1. Öffne ein neues Terminal.
 2. Lade die ROS2-Umgebung: 
    * Für Bash: `source /opt/ros/humble/setup.bash`
    * Für Zsh: `source /opt/ros/humble/setup.zsh`
-3. Starte die ausführbare Godot-Datei (z.B. `./Godot_v4.5-stable_linux.x86_64`) exakt aus diesem Terminal heraus.
+3. Navigiere zum Godot-Verzeichnis und starte die ausführbare Datei (z.B. `./Godot_v4.5-stable_linux.x86_64`) exakt aus diesem Terminal heraus.
 
 ---
 
-## Installation (Plug-and-Play)
-
-Das Plugin ist so konzipiert, dass die gesamte Komplexität der ROS2-Integration für den Nutzer unsichtbar gekapselt ist.
+## Installation & Verwendung (Plug-and-Play)
 
 1. Entpacke die ZIP-Datei des Plugins.
-2. Öffne ein leeres oder bestehendes Godot-Projekt über das vorbereitete ROS2-Terminal.
-3. Ziehe den entpackten Ordner `addons` per Drag-and-Drop direkt in das **Dateisystem-Fenster** (FileSystem Dock) des Godot-Editors.
-4. Klicke oben in der Godot-Menüleiste auf **Projekt** -> **Projekteinstellungen** -> Reiter **Plugins**.
-5. Setze ganz rechts den Haken bei **Aktivieren** (Enable), um das Plugin in der Engine zu registrieren.
+2. Kopiere oder ziehe den Ordner `addons` per Drag-and-Drop direkt in das **Dateisystem-Fenster** (FileSystem Dock) deines Godot-Editors.
+3. Klicke in der Menüleiste auf **Projekt** -> **Projekteinstellungen** -> Reiter **Plugins**.
+4. Setze ganz rechts den Haken bei **Aktivieren** (Enable), um die GDExtension-Bibliothek in der Engine zu registrieren.
+5. Drücke im Editor **Strg + A**, füge entweder einen `LidarSensor` oder einen `TestSensor` zu deiner 3D-Szene hinzu und platziere kollisionsfähige Objekte (`StaticBody3D`) in deren Erfassungsbereich.
+6. Starte die Simulation mit **F5**.
+7. Öffne ein zweites Terminal, source die ROS2-Umgebung und fange die Daten live ab:
+   * LiDAR: `ros2 topic echo /scan`
+   * Abstand: `ros2 topic echo /sensor_distance`
 
 ---
 
-## Verwendung & Testen (Beide Sensoren)
+## Für Entwickler: Eigene Sensoren erweitern
 
-Sobald das Plugin aktiviert ist, kannst du die Sensoren ohne Programmierung sofort in deiner 3D-Simulation testen:
+Dank der Abstraktionsschicht ist das Hinzufügen neuer Funktionalitäten extrem geradlinig:
 
-1. Öffne eine beliebige 3D-Szene im Godot-Editor.
-2. Drücke **Strg + A** (Knoten hinzufügen), suche nach dem gewünschten Sensor-Knoten:
-   * Füge `LidarSensor` für den LiDAR-PoC hinzu.
-   * Füge `TestSensor` für den einfachen Abstandssensor hinzu.
-3. Platziere Objekte mit Kollisionen (z. B. Wände/Würfel mit `StaticBody3D` und `CollisionShape3D`) im Scanbereich deines Sensors.
-4. Drücke **F5** (Simulation starten).
-5. Öffne ein zweites, neues Terminal und lade die ROS2-Umgebung (`source /opt/ros/humble/setup.bash` bzw. `.zsh`).
-
-### Daten live abfangen:
-* **Für den LiDAR-Sensor:** Tippe folgenden Befehl ein:
-  ```bash
-  ros2 topic echo /scan
+1. **C++ Klasse von `ROS2SensorBase` ableiten:** Deklariere die Klasse im Header und überschreibe die `_physics_process(double delta)` Schleife für die Sensor-Datenerfassung.
+2. **Methoden binden:** Registriere Variablen und Funktionen in der Methode `_bind_methods()`, um sie für Godots GUI sichtbar zu machen.
+3. **In `register_types.cpp` anmelden:** Füge den Befehl `ClassDB::register_class<DeineNeueKlasse>();` in das Initialisierungsmodul ein.
+4. **Kompilieren (Build-Prozess):** Führe in deinem Terminal den SCons-Build-Befehl aus (z.B. `scons platform=linux target=template_debug`), um deine Änderungen in die `.so`-Bibliothek zu kompilieren. Nach einem Neustart von Godot erscheint der neue Knoten sofort im Editor-Suchmenü.
