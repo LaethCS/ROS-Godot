@@ -6,11 +6,18 @@ Dieses Plugin ist Teil der Bachelorarbeit mit dem Titel "Konzeption und Entwickl
 
 Anstatt auf langsame Netzwerk-Schnittstellen wie WebSockets zu setzen, wurde in C++ ein nativer Echtzeit-Dolmetscher (eine GDExtension) programmiert. 
 
-**Kern-Features & Architektur:**
-* **Sensor-Framework:** Begonnen als Machbarkeitsnachweis mit einem simplen Abstandssensor (`ros2_abstandsensor` bei 25 Hz), beinhaltet das Plugin nun komplexe Sensoren wie **2D-LiDAR**, welche industriestandardisierte `sensor_msgs/LaserScan` publizieren.
-* **Dynamisches TF-Broadcasting:** Das Plugin übermittelt automatisch den Transformationsbaum (TF) zwischen der Welt und dem Roboter, was die direkte Nutzung im ROS2-Navigations-Stack (Nav2) und in RViz ermöglicht.
-* **Bidirektionale Steuerung:** Über implementierte Subscriber lauscht das System auf Topics wie `/cmd_vel` (`geometry_msgs/msg/Twist`) und übersetzt diese threadsicher in physikalische Bewegungen innerhalb der Godot-Engine.
-* **Abstraktionsschicht (Developer Experience):** C++-Komplexität ist vollständig gekapselt. Über eine generische Basis-Klasse (`ROS2SensorBase`) und Godot-Signale können Endnutzer ROS2-Knoten ohne C++-Kenntnisse direkt im Godot-Editor via Drag-and-Drop (Plug-and-Play) konfigurieren und über GDScript ansteuern.
+Das Add-on bringt direkt **zwei einsatzbereite Proof-of-Concept-Sensoren (Plug-and-Play)** mit, die ohne C++-Kenntnisse sofort in Godot genutzt werden können:
+
+### 1. Virtueller 2D-LiDAR-Sensor (`LidarSensor`) - *Komplexer PoC*
+Dieser Sensor simuliert einen echten rotierenden Laserscanner für Navigations- und SLAM-Aufgaben.
+* **Funktionsweise:** Tastet die Umgebung über rotierende bzw. gefächerte physikalische Strahlen ab und berechnet in Echtzeit die exakten Kollisionspunkte zu Hindernissen.
+* **Datenübertragung:** Konvertiert die gemessenen Abstände direkt in das standardisierte, industrielle Datenformat **`sensor_msgs/msg/LaserScan`**.
+* **Frequenz & Netz:** Die Daten werden threadsicher direkt in das ROS2-DDS-Netzwerk auf das Topic **/scan** gefunkt. Damit ist dieser Sensor sofort kompatibel mit SLAM-Algorithmen und kann direkt in **RViz** visualisiert werden.
+
+### 2. Virtueller Abstandssensor (`TestSensor`) - *Einfacher PoC*
+* **Funktionsweise:** Dieser C++ Knoten baut auf einem untergeordneten Godot **`RayCast3D`**-Kindknoten auf. Er schießt einen unsichtbaren Laserstrahl nach vorne ab, nutzt die physikalische Kollisionsabfrage von Godot und berechnet die exakte Distanz zu einem physischen Hindernis.
+* **Datenübertragung:** Sendet die gemessene Entfernung als einfache Fließkommazahl im Format **`std_msgs/msg/Float32`** direkt in das ROS2-Netzwerk auf das Topic **/sensor_distance**.
+* **Synchronisation:** Durch eine feste Drosselung auf die Physik-Engine (Akkumulator-Logik) liefert der Sensor stabile Werte mit exakt 25 Hz, um ein Flackern oder Desynchronisationen zwischen Render-Frames und Physik-Schritten zu verhindern.
 
 ---
 
@@ -29,7 +36,7 @@ Die Verteilung dieses GDExtension-Add-ons ist extrem einfach, da lediglich die k
 
 ## ⚠️ Wichtiger Start-Hinweis (Kritisch)
 
-Godot darf **niemals** einfach per Doppelklick über ein Desktop-Icon gestartet werden, da sonst die ROS2-Umgebungsvariablen fehlen und die Engine lautlos im Hintergrund abstürzt oder das Plugin nicht geladen werden kann. Die Engine muss zwingend aus einem vorbereiteten Terminal gestartet werden:
+Godot darf **niemals** einfach per Doppelklick über ein Desktop-Icon gestartet werden, da sonst die ROS2-Umgebungsvariablen fehlen und die Engine lautlos im Hintergrund abstürzt oder das GDExtension-Plugin nicht geladen werden kann. Die Engine muss zwingend aus einem vorbereiteten Terminal gestartet werden:
 
 1. Öffne ein neues Terminal.
 2. Lade die ROS2-Umgebung: 
@@ -43,23 +50,27 @@ Godot darf **niemals** einfach per Doppelklick über ein Desktop-Icon gestartet 
 
 Das Plugin ist so konzipiert, dass die gesamte Komplexität der ROS2-Integration für den Nutzer unsichtbar gekapselt ist.
 
-1. Entpacke die heruntergeladene ZIP-Datei deines Plugins.
+1. Entpacke die ZIP-Datei des Plugins.
 2. Öffne ein leeres oder bestehendes Godot-Projekt über das vorbereitete ROS2-Terminal.
-3. Ziehe den entpackten Ordner `addons` (welcher den Unterordner mit der Plugin-Struktur enthält) per Drag-and-Drop direkt in das **Dateisystem-Fenster** (FileSystem Dock) des Godot-Editors.
-4. Klicke oben in der Godot-Menüleiste auf **Projekt** und wähle **Projekteinstellungen** aus.
-5. Wechsle im sich öffnenden Fenster auf den Reiter **Plugins**.
-6. Setze ganz rechts den Haken bei **Aktivieren** (Enable), um das Plugin in der Engine zu registrieren.
+3. Ziehe den entpackten Ordner `addons` per Drag-and-Drop direkt in das **Dateisystem-Fenster** (FileSystem Dock) des Godot-Editors.
+4. Klicke oben in der Godot-Menüleiste auf **Projekt** -> **Projekteinstellungen** -> Reiter **Plugins**.
+5. Setze ganz rechts den Haken bei **Aktivieren** (Enable), um das Plugin in der Engine zu registrieren.
 
 ---
 
-## Verwendung & Testen
+## Verwendung & Testen (Beide Sensoren)
 
-Sobald das Plugin aktiviert ist, können die ROS2-Knoten völlig ohne C++-Kenntnisse in der Engine genutzt werden.
+Sobald das Plugin aktiviert ist, kannst du die Sensoren ohne Programmierung sofort in deiner 3D-Simulation testen:
 
 1. Öffne eine beliebige 3D-Szene im Godot-Editor.
-2. Drücke **Strg + A** (Knoten hinzufügen) und tippe z.B. `TestSensor` oder deine neuen abstrakten Publisher-Knoten in die Suchleiste ein.
-3. Platziere den C++-Knoten in der Welt und ordne ihm in Godot ein physikalisches Objekt (z.B. `StaticBody3D` mit `CollisionShape3D`) zu.
-4. Drücke den **Play**-Button (F5), um die Simulation zu starten.
-5. Öffne ein zweites Terminal und source die ROS2-Umgebung erneut.
-6. **Daten empfangen:** Tippe `ros2 topic echo /sensor_distance` (oder das entsprechende Topic), um die Sensordaten (z.B. Lidar-Scans oder Distanzen) in Echtzeit im Terminal zu sehen.
-7. **Roboter steuern:** Sende eine Twist-Nachricht über `/cmd_vel` im Terminal, um zu beobachten, wie sich das Objekt in Godot physikalisch bewegt.
+2. Drücke **Strg + A** (Knoten hinzufügen), suche nach dem gewünschten Sensor-Knoten:
+   * Füge `LidarSensor` für den LiDAR-PoC hinzu.
+   * Füge `TestSensor` für den einfachen Abstandssensor hinzu.
+3. Platziere Objekte mit Kollisionen (z. B. Wände/Würfel mit `StaticBody3D` und `CollisionShape3D`) im Scanbereich deines Sensors.
+4. Drücke **F5** (Simulation starten).
+5. Öffne ein zweites, neues Terminal und lade die ROS2-Umgebung (`source /opt/ros/humble/setup.bash` bzw. `.zsh`).
+
+### Daten live abfangen:
+* **Für den LiDAR-Sensor:** Tippe folgenden Befehl ein:
+  ```bash
+  ros2 topic echo /scan
