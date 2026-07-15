@@ -54,4 +54,4 @@ if "suffix" not in env:
     
 # Build Targets
 source_files = Glob('src/*.cpp') # Variable heißt jetzt source_files
-library = env.SharedLibrary("godot_project/addons/ros2_abstandsensor/bin/libtest" + env["suffix"] + ".so", source_files)
+library = env.SharedLibrary("godot_project/addons/ros2_godot_bridge/bin/libtest" + env["suffix"] + ".so", source_files)
