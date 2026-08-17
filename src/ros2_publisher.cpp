@@ -1,9 +1,7 @@
 #include "ros2_publisher.hpp"
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
-
-// Include für deine RosBridge, um den ROS-Node zu holen
-#include "ros_bridge.hpp" 
+#include "ros_bridge.hpp"
 
 using namespace godot;
 
@@ -16,21 +14,18 @@ void ROS2Publisher::_bind_methods() {
 
 ROS2Publisher::ROS2Publisher() {
     topic_name = "/my_generic_topic";
-    publisher_ = nullptr; // Sicherstellen, dass er anfangs leer ist
+    publisher_ = nullptr;
 }
 
 ROS2Publisher::~ROS2Publisher() {}
 
 void ROS2Publisher::_ready() {
-    // 1. Instanz-Adresse drucken
-    UtilityFunctions::print("--- DEBUG: _ready() aufgerufen für Instanz: ", (long)this, " ---");
-
+    // Retrieve the ROS node from the singleton and establish the publisher instance
     auto bridge = RosBridge::get_singleton();
     if (bridge) {
         auto ros_node = bridge->get_ros_node();
         if (ros_node) {
             publisher_ = ros_node->create_publisher<std_msgs::msg::String>(topic_name.utf8().get_data(), 10);
-            UtilityFunctions::print("ERFOLG: Publisher erstellt in Instanz: ", (long)this);
         }
     }
 }
@@ -43,11 +38,9 @@ String ROS2Publisher::get_topic_name() const {
     return topic_name;
 }
 
+// Publishes a string message to the ROS2 topic, applying lazy initialization if the publisher is unallocated
 void ROS2Publisher::publish_message(const String &message) {
-    // Falls der Publisher aus irgendeinem Grund noch nicht existiert,
-    // versuchen wir ihn hier sofort zu erzeugen (Lazy Initialization)
     if (publisher_ == nullptr) {
-        UtilityFunctions::print("Publisher war NULL, versuche Initialisierung...");
         auto bridge = RosBridge::get_singleton();
         if (bridge) {
             auto ros_node = bridge->get_ros_node();
@@ -62,20 +55,6 @@ void ROS2Publisher::publish_message(const String &message) {
         ros_msg.data = message.utf8().get_data();
         publisher_->publish(ros_msg);
     } else {
-        UtilityFunctions::printerr("Immer noch NULL!");
-    }
+        UtilityFunctions::printerr("Failed to publish message: Publisher pointer is null.");
+    } 
 }
-
-/*void ROS2Publisher::publish_message(const String &message) {
-    // 2. Instanz-Adresse drucken
-    UtilityFunctions::print("--- DEBUG: publish_message() aufgerufen für Instanz: ", (long)this, " ---");
-
-    if (publisher_ != nullptr) {
-        std_msgs::msg::String ros_msg;
-        ros_msg.data = message.utf8().get_data();
-        publisher_->publish(ros_msg);
-        UtilityFunctions::print("Gesendet an ROS2 von Instanz: ", (long)this);
-    } else {
-        UtilityFunctions::printerr("FEHLER: Publisher ist NULL in Instanz: ", (long)this);
-    }
-}*/

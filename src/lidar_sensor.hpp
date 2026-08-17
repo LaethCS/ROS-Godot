@@ -11,22 +11,24 @@
 
 namespace godot {
 
+// Virtual LiDAR sensor node inheriting from the base framework class,
+// performing physics-based raycasts to simulate 2D LaserScan data streams in ROS2.
 class LidarSensor : public ROS2SensorBase {
     GDCLASS(LidarSensor, ROS2SensorBase);
 
-private:
-    double fov_degrees = 270.0;             
-    double angle_increment_degrees = 0.25;  
+private: 
+    double fov_degrees = 270.0;             // Total field of view angle in degrees
+    double angle_increment_degrees = 0.25;  // Angular resolution between consecutive laser rays
 
-    double angle_min = 0.0;
-    double angle_max = 0.0;
-    double angle_increment = 0.0;
+    double angle_min = 0.0;                 // Minimum scan angle in radians
+    double angle_max = 0.0;                 // Maximum scan angle in radians
+    double angle_increment = 0.0;           // Calculated ray angle increment in radians
     
-    double range_min = 0.1;
-    double range_max = 30.0;
-    double noise_stddev = 0.01;
+    double range_min = 0.1;                 // Minimum detectable distance threshold
+    double range_max = 30.0;                // Maximum detectable distance range limit
+    double noise_stddev = 0.01;             // Standard deviation for simulated Gaussian measurement noise
 
-    bool show_debug_laser = false;
+    bool show_debug_laser = false;          // Toggle flag to visualize active rays in the 3D viewport
     MeshInstance3D *debug_mesh_instance = nullptr;
     Ref<ImmediateMesh> debug_mesh;
     Ref<StandardMaterial3D> debug_material;
@@ -34,27 +36,31 @@ private:
     std::default_random_engine random_engine;
     std::normal_distribution<double> noise_distribution;
 
-    std::vector<Vector3> local_ray_directions;
-    int ray_count = 0;
+    std::vector<Vector3> local_ray_directions; // Precomputed unit vectors for each individual scan ray
+    int ray_count = 0;                         // Total number of rays evaluated per scan cycle
 
-    // Spezifischer ROS2 Publisher für diesen Sensor-Knoten
+    // Dedicated ROS2 publisher for broadcasting LaserScan telemetry data
     rclcpp::Publisher<sensor_msgs::msg::LaserScan>::SharedPtr lidar_publisher;
 
+    // Recalculates ray angles and direction vectors when scan properties change
     void initialize_ray_angles();
 
 protected:
+    // Registers methods and inspectable properties with Godot's runtime type system
     static void _bind_methods();
 
 public:
     LidarSensor();
     ~LidarSensor();
 
+    // Node initialization hook handling debug visualization setup and base configuration
     void _ready() override;
     
-    // Framework-Implementierungen
+    // Framework interface implementations for publisher creation and periodic data updates
     void setup_publisher() override;
     void update_data() override;
 
+    // Getters and setters for configurable sensor properties exposed in the editor inspector
     void set_fov_degrees(double p_val);
     double get_fov_degrees() const { return fov_degrees; }
 

@@ -15,13 +15,14 @@ using namespace godot;
 LidarSensor::LidarSensor() {
     random_engine.seed(std::random_device{}());
 
-    // Standardkonfiguration für das Framework festlegen
+    // Configure default simulation framework parameters
     topic_name = "/scan";
-    frequency = 20.0; // Entspricht der alten update_rate von 0.05s
+    frequency = 20.0; // Target update frequency of 20 Hz
 
     debug_mesh.instantiate();
     debug_material.instantiate();
     
+    // Set unshaded red semi-transparent material properties for visualization lines
     debug_material->set_albedo(Color(1.0, 0.0, 0.0, 0.5)); 
     debug_material->set_shading_mode(StandardMaterial3D::SHADING_MODE_UNSHADED);
     debug_material->set_flag(StandardMaterial3D::FLAG_DISABLE_DEPTH_TEST, false);
@@ -29,13 +30,13 @@ LidarSensor::LidarSensor() {
 
 LidarSensor::~LidarSensor() {}
 
-void LidarSensor::_ready() {
+void LidarSensor::_ready() { 
     if (Engine::get_singleton()->is_editor_hint()) return;
 
-    // 1. Basis-Klasse anweisen, die RosBridge-Verbindung aufzubauen
+    // 1. Establish core ROS2 framework connection through the base class
     ROS2SensorBase::_ready();
 
-    // 2. Internes LiDAR-Setup ausführen
+    // 2. Compute ray directions and allocate debug rendering instances
     initialize_ray_angles();
 
     debug_mesh_instance = memnew(MeshInstance3D);
@@ -45,14 +46,14 @@ void LidarSensor::_ready() {
     add_child(debug_mesh_instance);
 }
 
+// Dynamically creates a ROS2 publisher for LaserScan messages using inspector-defined parameters
 void LidarSensor::setup_publisher() {
     if (ros_node) {
-        // Nutzt jetzt dynamisch das Inspector-Feld!
         lidar_publisher = ros_node->create_publisher<sensor_msgs::msg::LaserScan>(topic_name.utf8().get_data(), 10);
-        UtilityFunctions::print("LiDAR-Publisher dynamisch erstellt auf Topic: ", topic_name);
     }
 }
 
+// Executes raycasting queries across all scan angles, computes distances with noise, and publishes LaserScan telemetry
 void LidarSensor::update_data() {
     PhysicsDirectSpaceState3D *space_state = get_world_3d()->get_direct_space_state();
     if (!space_state || !lidar_publisher) return;
@@ -68,6 +69,7 @@ void LidarSensor::update_data() {
         debug_mesh->surface_begin(Mesh::PRIMITIVE_LINES);
     }
 
+    // Iterate through all individual laser rays to evaluate physics collisions
     for (int i = 0; i < ray_count; ++i) {
         Vector3 global_dir = global_transform.basis.xform(local_ray_directions[i]).normalized();
         Vector3 target_pos = origin + (global_dir * range_max);
@@ -105,7 +107,7 @@ void LidarSensor::update_data() {
         debug_mesh->surface_end();
     }
 
-    // Nachricht befüllen und über den eigenen Publisher absenden
+    // Populate standard ROS2 LaserScan message structure and broadcast over DDS network
     auto msg = sensor_msgs::msg::LaserScan();
     msg.header.stamp = ros_node->now();
     msg.header.frame_id = "lidar_link";
@@ -120,12 +122,13 @@ void LidarSensor::update_data() {
 
     lidar_publisher->publish(msg);
 
-    // Die Koordinatentransformation (TF) zur Bridge delegieren
+    // Broadcast coordinate frame transformation (TF) linking base structure to the lidar sensor node
     if (RosBridge::get_singleton()) {
-        RosBridge::get_singleton()->send_tf_transform("lidar_link", global_transform);
+        RosBridge::get_singleton()->send_tf_transform("base_link", "lidar_link", global_transform);
     }
 }
 
+// Calculates spatial ray vectors and total ray counts based on configured field-of-view and angular resolution
 void LidarSensor::initialize_ray_angles() {
     local_ray_directions.clear();
     
@@ -142,7 +145,7 @@ void LidarSensor::initialize_ray_angles() {
     angle_min = -fov_rad / 2.0;
     angle_max = fov_rad / 2.0;
 
-    ray_count = static_cast<int>(std::floor((angle_max - angle_min) / angle_increment)) + 1;
+    ray_count = static_cast<int>((angle_max - angle_min) / angle_increment) + 1;
     local_ray_directions.reserve(ray_count);
 
     for (int i = 0; i < ray_count; ++i) {

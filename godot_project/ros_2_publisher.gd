@@ -1,12 +1,13 @@
-extends ROS2Publisher 
+extends ROS2Publisher
 
-func _ready():
-	# Wir sind jetzt Teil des ROS2Publisher-Objekts.
-	# Da wir selbst ein Publisher sind, brauchen wir kein '$' oder externe Referenz.
-	print("ROS2Publisher Skript bereit. Instanz-ID: ", self.get_instance_id())
+func _ready() -> void:
+	# As a subclass extending ROS2Publisher, this script directly inherits 
+	# publishing capabilities, eliminating the need for external node references.
+	print("ROS2Publisher script ready. Instance ID: ", self.get_instance_id())
 
-func _input(event): 
-	if event.is_action_pressed("ui_accept"): 
-		print("Sende Nachricht...")
-		# Ruf die Funktion direkt auf 'self' auf
-		self.publish_message("Hallo ROS2, hier spricht die C++ Instanz!")
+func _input(event: InputEvent) -> void:
+	# Trigger message broadcast on UI accept action (e.g., Enter or Spacebar key press)
+	if event.is_action_pressed("ui_accept"):
+		print("Broadcasting message...")
+		# Invoke the native C++ method directly on the instance
+		self.publish_message("Hello ROS2, greetings from the C++ instance!")

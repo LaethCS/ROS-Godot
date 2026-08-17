@@ -1,8 +1,10 @@
-[gd_scene load_steps=11 format=3 uid="uid://bc2w1q1qmjays"]
+[gd_scene load_steps=14 format=3 uid="uid://bc2w1q1qmjays"]
 
 [ext_resource type="Script" uid="uid://byynvlrc2p4tv" path="res://RobotController.gd" id="1_a202f"]
 [ext_resource type="Script" uid="uid://bcnbuwmh168yg" path="res://collide_obj.gd" id="1_noarx"]
+[ext_resource type="PackedScene" uid="uid://bcfxbgkbxxwb2" path="res://assets/lidar3d.gltf" id="2_r3fl7"]
 [ext_resource type="Script" uid="uid://cvd14ovgtuv7h" path="res://ros_2_publisher.gd" id="3_a0tk4"]
+[ext_resource type="PackedScene" uid="uid://ctys8ntok70to" path="res://assets/imu3d.gltf" id="4_jka67"]
 
 [sub_resource type="BoxMesh" id="BoxMesh_4xowi"]
 
@@ -12,6 +14,9 @@ albedo_color = Color(1, 0, 0, 1)
 [sub_resource type="BoxShape3D" id="BoxShape3D_4xowi"]
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_4xowi"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_a0tk4"]
+size = Vector3(2.0454102, 0.50891113, 1.972168)
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_a0tk4"]
 
@@ -23,7 +28,7 @@ albedo_color = Color(0, 0, 1, 1)
 [node name="Node3D" type="Node3D"]
 
 [node name="collide_obj" type="Node3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.38280368, 0, 2.541892)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.38280368, -0.2691244, 1.783962)
 script = ExtResource("1_noarx")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="collide_obj"]
@@ -48,6 +53,10 @@ skeleton = NodePath("../..")
 
 [node name="StaticBody3D" type="StaticBody3D" parent="Ground/MeshInstance3D2"]
 
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Ground/MeshInstance3D2/StaticBody3D"]
+transform = Transform3D(0.99999857, 0, 0, 0, 0.99999857, 0, 0, 0, 0.99999857, -0.02319332, -0.24554443, 0.046630837)
+shape = SubResource("BoxShape3D_a0tk4")
+
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 0.57357645, 0.81915206, 0, -0.81915206, 0.57357645, -4.41, 17.65, 0)
 
@@ -56,21 +65,29 @@ fov_degrees = 106.0
 show_debug_laser = true
 transform = Transform3D(-0.23580368, 0, 0.9718008, 0, 1, 0, -0.9718008, 0, -0.23580368, 2.5963652, -0.189749, 0.48791575)
 
-[node name="CharacterBody3D" type="CharacterBody3D" parent="."]
+[node name="LidarSensor3d" parent="LidarSensor" instance=ExtResource("2_r3fl7")]
+transform = Transform3D(0.001, 0, 0, 0, -4.371139e-11, -0.001, 0, 0.001, -4.371139e-11, 0, 0, 0)
+
+[node name="RigidBody3D" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.3392062, 0, 1.4595854)
 script = ExtResource("1_a202f")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="CharacterBody3D"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RigidBody3D"]
 shape = SubResource("CapsuleShape3D_a0tk4")
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="CharacterBody3D"]
+[node name="MeshInstance3D" type="MeshInstance3D" parent="RigidBody3D"]
 mesh = SubResource("CapsuleMesh_a202f")
 surface_material_override/0 = SubResource("StandardMaterial3D_noarx")
+
+[node name="ImuSensor" type="ImuSensor" parent="RigidBody3D"]
+
+[node name="Imu3d" parent="RigidBody3D/ImuSensor" instance=ExtResource("4_jka67")]
+transform = Transform3D(0.001, 0, 0, 0, 0.001, 0, 0, 0, 0.001, 0, 0, 0)
+
+[node name="OdomSensor" type="OdomSensor" parent="RigidBody3D"]
 
 [node name="ROS2Publisher" type="ROS2Publisher" parent="."]
 script = ExtResource("3_a0tk4")
 
-[node name="TestSensor" type="TestSensor" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.6488638, 3.4490786, -3.797029)
-
-[node name="RayCast3D" type="RayCast3D" parent="TestSensor"]
-target_position = Vector3(0, 5.08, 0)
+[editable path="LidarSensor/LidarSensor3d"]
+[editable path="RigidBody3D/ImuSensor/Imu3d"]
