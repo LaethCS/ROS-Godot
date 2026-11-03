@@ -13,10 +13,8 @@ void OdomSensor::_bind_methods() {}
 // Physics process loop throttling odometry updates to the configured frequency,
 // extracting parent rigid body state, converting velocities to local frame, and publishing via ROS bridge.
 void OdomSensor::_physics_process(double delta) {
-    update_timer += delta;
-    if (update_timer < update_rate) return;
-    update_timer = 0.0;
-  
+    if (!throttle.update(delta)) return;
+
     // Odometry requires a physical parent body to extract motion tracking data
     RigidBody3D* parent = Object::cast_to<RigidBody3D>(get_parent());
     if (!parent) return;

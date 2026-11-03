@@ -6,23 +6,18 @@
 using namespace godot;
 
 ROS2SensorBase::ROS2SensorBase() {
-    time_accumulator = 0.0;
     frequency = 25.0; 
     topic_name = "/sensor/data";
+    throttle.set_interval(1.0 / frequency);
 }
 
 ROS2SensorBase::~ROS2SensorBase() {}
 
 void ROS2SensorBase::_bind_methods() {
-    // Bind topic name property to the editor inspector
-    ClassDB::bind_method(D_METHOD("set_topic_name", "name"), &ROS2SensorBase::set_topic_name);
-    ClassDB::bind_method(D_METHOD("get_topic_name"), &ROS2SensorBase::get_topic_name);
-    ADD_PROPERTY(PropertyInfo(Variant::STRING, "topic_name"), "set_topic_name", "get_topic_name");
-
-    // Bind publishing frequency property to the editor inspector
-    ClassDB::bind_method(D_METHOD("set_frequency", "hz"), &ROS2SensorBase::set_frequency);
-    ClassDB::bind_method(D_METHOD("get_frequency"), &ROS2SensorBase::get_frequency);
-    ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "frequency"), "set_frequency", "get_frequency");
+    // NOTE: The publishing frequency and topic name are deliberately NOT exposed as
+    // inspector properties. Derived sensors hardcode their ROS topic and rate so the
+    // simulation reflects a fixed physical device (like an industrial LiDAR), matching
+    // the behaviour of the IMU and Odom sensors.
 }
 
 void ROS2SensorBase::_ready() {
@@ -48,13 +43,12 @@ void ROS2SensorBase::_ready() {
 void ROS2SensorBase::_process(double delta) {
     if (Engine::get_singleton()->is_editor_hint()) return;
 
-    time_accumulator += delta;
-    
-    // Accumulate time steps to trigger updates precisely at the targeted frequency rate
-    if (frequency > 0.0 && time_accumulator >= (1.0 / frequency)) {
-        update_data(); // Invokes the derived class data update implementation
-        time_accumulator = 0.0;
-    } 
+    // Trigger an update once per configured interval. The Throttle carries surplus
+    // time (delta beyond the interval) into the next step instead of dropping it,
+    // so the effective publish rate stays accurate regardless of Godot's framerate.
+    if (throttle.update(delta)) {
+        update_data();
+    }
 }
 
 void ROS2SensorBase::set_topic_name(const String &name) {
@@ -67,6 +61,7 @@ String ROS2SensorBase::get_topic_name() const {
 
 void ROS2SensorBase::set_frequency(double hz) {
     frequency = hz;
+    throttle.set_interval((hz > 0.0) ? (1.0 / hz) : 0.0);
 }
 
 double ROS2SensorBase::get_frequency() const {

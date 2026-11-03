@@ -2,6 +2,7 @@
 #define ODOM_SENSOR_HPP
 
 #include <godot_cpp/classes/node3d.hpp>
+#include "throttle.hpp"
 
 namespace godot {
 
@@ -11,8 +12,9 @@ class OdomSensor : public Node3D {
     GDCLASS(OdomSensor, Node3D);
 
 private:
-    double update_rate = 0.02; // Update interval in seconds (targeting 50 Hz)
-    double update_timer = 0.0; // Time accumulator used for frequency throttling
+    // Shared throttling helper. Interval defaults to ~30 Hz (0.033333 s,
+    // the Nav2/Gazebo odometry reference rate).
+    Throttle throttle{0.033333};
 
 protected:
     // Registers runtime methods with Godot's class database

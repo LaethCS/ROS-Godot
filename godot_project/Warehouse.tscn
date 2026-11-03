@@ -968,12 +968,15 @@ transform = Transform3D(-1.3113416e-10, 0, 0.003, 0, 0.003, 0, -0.003, 0, -1.311
 transform = Transform3D(0.9865893, 0, -0.16322267, 0.040936645, 0.9680383, 0.24743898, 0.15800582, -0.25080243, 0.9550562, -0.23688698, 0.8705206, 1.4682903)
 
 [node name="LidarSensor" type="LidarSensor" parent="Robot"]
-fov_degrees = 106.0
+fov_degrees = 114.0
 show_debug_laser = true
-transform = Transform3D(0.89884007, 0, 0.43827683, 0, 1, 0, -0.43827683, 0, 0.89884007, 0.0103542805, 0.6143874, 0.04617896)
+transform = Transform3D(0.89884007, 0, 0.43827683, 0, 1, 0, -0.43827683, 0, 0.89884007, 0.0103542805, 0.4963199, 0.04617896)
 
 [node name="ImuSensor" type="ImuSensor" parent="Robot"]
+noise_enabled = false
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.20514959, 0)
+
+[node name="OdomSensor" type="OdomSensor" parent="Robot"]
 
 [editable path="Sketchfab_Scene"]
 [editable path="Robot/Initial burger"]

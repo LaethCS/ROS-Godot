@@ -1,5 +1,6 @@
 #include "ros_bridge.hpp"
 #include <godot_cpp/variant/utility_functions.hpp>
+#include <godot_cpp/classes/engine.hpp>
 #include <geometry_msgs/msg/transform_stamped.hpp>
 #include "ros2_message_builder.hpp"
 
@@ -14,14 +15,28 @@ RosBridge::RosBridge() {
         singleton = this;
     }
 
+    // When the plugin is loaded inside the Godot editor, do NOT create the ROS2
+    // node. Otherwise the editor process would join the ROS2 graph as an extra
+    // "godot_ros_bridge" node (double publishers/subscriptions on /cmd_vel,
+    // /imu/data, /odom, /tf). The bridge is only initialized at runtime.
+    if (Engine::get_singleton()->is_editor_hint()) {
+        is_spinning = false;
+        return;
+    }
+
     if (!rclcpp::ok()) {
         rclcpp::init(0, nullptr);
     }  
 
     ros_node = rclcpp::Node::make_shared("godot_ros_bridge");
-    
+
+    // RELIABLE QoS is used across the bridge. This matches the default reliability
+    // that rviz2 (Humble) uses for Odometry / Imu displays, so pre-usable topics
+    // (/cmd_vel, /imu/data, /odom) stay compatible with a large set of tools.
+    // (REP-2003 suggests best_effort for some sensor streams, but rviz2 Humble
+    //  subscribes those displays with RELIABLE, so we follow that to stay visible.)
     auto qos = rclcpp::QoS(rclcpp::KeepLast(10)).reliable();
-    
+
     // Setup transform broadcaster for dynamic coordinate frames (TF)
     tf_broadcaster = std::make_shared<tf2_ros::TransformBroadcaster>(ros_node);
 
@@ -32,7 +47,7 @@ RosBridge::RosBridge() {
         std::bind(&RosBridge::cmd_vel_callback, this, std::placeholders::_1)
     );
 
-    // Initialize telemetry publishers for IMU and odometry data streams
+    // Initialize telemetry publishers for IMU and odometry data streams (RELIABLE).
     imu_publisher = ros_node->create_publisher<sensor_msgs::msg::Imu>("/imu/data", qos);
     odom_publisher = ros_node->create_publisher<nav_msgs::msg::Odometry>("/odom", qos);
 

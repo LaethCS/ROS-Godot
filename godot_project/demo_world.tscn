@@ -1,0 +1,140 @@
+[gd_scene load_steps=16 format=3 uid="uid://kug0v82rllp0"]
+
+[ext_resource type="Script" uid="uid://drhhaucall3gp" path="res://robot.gd" id="1_robot"]
+[ext_resource type="PackedScene" uid="uid://bcfxbgkbxxwb2" path="res://assets/lidar3d.gltf" id="2_lidar"]
+[ext_resource type="PackedScene" uid="uid://ctys8ntok70to" path="res://assets/imu3d.gltf" id="3_imu"]
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_ground"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_ground"]
+albedo_color = Color(0.3, 0.5, 0.35, 1)
+
+[sub_resource type="BoxShape3D" id="BoxShape_ground"]
+size = Vector3(100, 0.2, 100)
+
+[sub_resource type="BoxMesh" id="BoxMesh_boxA"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_boxA"]
+albedo_color = Color(0.9, 0.35, 0.2, 1)
+
+[sub_resource type="BoxShape3D" id="BoxShape_boxA"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_boxB"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_boxB"]
+albedo_color = Color(0.2, 0.4, 0.9, 1)
+
+[sub_resource type="BoxShape3D" id="BoxShape_boxB"]
+size = Vector3(0.9, 1.6, 0.9)
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape_robot"]
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_robot"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_robot"]
+albedo_color = Color(0.1, 0.7, 0.95, 1)
+
+[node name="DemoWorld" type="Node3D"]
+
+[node name="Ground" type="StaticBody3D" parent="."]
+
+[node name="GroundMesh" type="MeshInstance3D" parent="Ground"]
+transform = Transform3D(50, 0, 0, 0, 50, 0, 0, 0, 50, 0, -0.1, 0)
+mesh = SubResource("PlaneMesh_ground")
+surface_material_override/0 = SubResource("Mat_ground")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Ground"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.1, 0)
+shape = SubResource("BoxShape_ground")
+
+[node name="ObstacleA" type="StaticBody3D" parent="."]
+transform = Transform3D(5.77, 0, 0, 0, 5.77, 0, 0, 0, 5.77, 5.5235424, 2.808362, -0.12212849)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="ObstacleA"]
+mesh = SubResource("BoxMesh_boxA")
+surface_material_override/0 = SubResource("Mat_boxA")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="ObstacleA"]
+shape = SubResource("BoxShape_boxA")
+
+[node name="ObstacleB" type="StaticBody3D" parent="."]
+transform = Transform3D(1.925, 0, 0, 0, 1.925, 0, 0, 0, 1.925, -3, 0.8, -2.5)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="ObstacleB"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.11694527, 0.099524945, -0.9323964)
+mesh = SubResource("BoxMesh_boxB")
+surface_material_override/0 = SubResource("Mat_boxB")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="ObstacleB"]
+shape = SubResource("BoxShape_boxB")
+
+[node name="ObstacleB2" type="StaticBody3D" parent="."]
+transform = Transform3D(2.4738727, 0, -1.4150807, 0, 2.85, 0, 1.4150807, 0, 2.4738727, 0.4264593, 1.2171218, -4.3181906)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="ObstacleB2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.11694527, 0.099524945, -0.9323964)
+mesh = SubResource("BoxMesh_boxB")
+surface_material_override/0 = SubResource("Mat_boxB")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="ObstacleB2"]
+shape = SubResource("BoxShape_boxB")
+
+[node name="ObstacleC" type="StaticBody3D" parent="."]
+transform = Transform3D(6.530247, 0, -0.6240754, 0, 6.56, 0, 0.6240754, 0, 6.530247, -0.85395885, 1.4323592, 5.883389)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="ObstacleC"]
+transform = Transform3D(1, 0, -2.2351742e-08, 0, 0.99999976, 0, 2.2351742e-08, 0, 1, -0.12465113, 0.33732802, 0.15375888)
+mesh = SubResource("BoxMesh_boxA")
+surface_material_override/0 = SubResource("Mat_boxA")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="ObstacleC"]
+shape = SubResource("BoxShape_boxA")
+
+[node name="ObstacleD" type="StaticBody3D" parent="."]
+transform = Transform3D(1.6788561, 0, 1.0306997, 0, 1.97, 0, -1.0306997, 0, 1.6788561, -6.0343895, 1.0079284, 0.042867422)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="ObstacleD"]
+mesh = SubResource("BoxMesh_boxB")
+surface_material_override/0 = SubResource("Mat_boxB")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="ObstacleD"]
+shape = SubResource("BoxShape_boxB")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.57357645, 0.81915206, 0, -0.81915206, 0.57357645, -4, 12, 4)
+
+[node name="Robot" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.7549591, 1.4289298, -1.6023135)
+axis_lock_angular_x = true
+axis_lock_angular_z = true
+script = ExtResource("1_robot")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Robot"]
+shape = SubResource("CapsuleShape_robot")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Robot"]
+mesh = SubResource("CapsuleMesh_robot")
+surface_material_override/0 = SubResource("Mat_robot")
+
+[node name="Camera3D" type="Camera3D" parent="Robot"]
+transform = Transform3D(0.8510691, 0.08028868, -0.5188789, 0.12756032, 0.92701375, 0.35266677, 0.509323, -0.36633208, 0.778711, -0.76481533, 1.6121767, 2.2)
+
+[node name="LidarSensor" type="LidarSensor" parent="Robot"]
+fov_degrees = 122.0
+show_debug_laser = true
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.07662308, 0)
+
+[node name="Lidar3d" parent="Robot/LidarSensor" instance=ExtResource("2_lidar")]
+transform = Transform3D(0.001, 0, 0, 0, 0.001, 0, 0, 0, 0.001, 0, 0, 0)
+
+[node name="ImuSensor" type="ImuSensor" parent="Robot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.2, 0)
+
+[node name="Imu3d" parent="Robot/ImuSensor" instance=ExtResource("3_imu")]
+transform = Transform3D(0.001, 0, 0, 0, 0.001, 0, 0, 0, 0.001, 0, 0, 0)
+
+[node name="OdomSensor" type="OdomSensor" parent="Robot"]
+transform = Transform3D(0.8114006, 0, -0.5844904, 0, 1, 0, 0.5844904, 0, 0.8114006, 0.044999957, 0, 0)
+
+[editable path="Robot/LidarSensor/Lidar3d"]
+[editable path="Robot/ImuSensor/Imu3d"]

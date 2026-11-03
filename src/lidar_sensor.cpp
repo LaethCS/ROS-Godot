@@ -15,9 +15,12 @@ using namespace godot;
 LidarSensor::LidarSensor() {
     random_engine.seed(std::random_device{}());
 
-    // Configure default simulation framework parameters
-    topic_name = "/scan";
-    frequency = 20.0; // Target update frequency of 20 Hz
+    // Configure default simulation framework parameters.
+    // The topic and rate are FIXED to mimic a concrete industrial LiDAR device:
+    // - /lidar_sensor identifies this device (clearly separate from /imu/data, /odom)
+    // - 10 Hz is the de-facto reference rate used by Nav2 / Gazebo setups
+    topic_name = "/lidar_sensor";
+    frequency = 10.0; // Fixed target update frequency of 10 Hz
 
     debug_mesh.instantiate();
     debug_material.instantiate();
@@ -90,10 +93,13 @@ void LidarSensor::update_data() {
             if (true_distance < range_min) {
                 scan_ranges[i] = std::numeric_limits<float>::infinity();
             } else {
-                double noise = noise_distribution(random_engine);
-                double noisy_distance = true_distance + noise;
-                noisy_distance = std::clamp(noisy_distance, range_min, range_max);
-                scan_ranges[i] = static_cast<float>(noisy_distance);
+                double measured = true_distance;
+                if (noise_enabled) {
+                    double noise = noise_distribution(random_engine);
+                    measured += noise;
+                }
+                measured = std::clamp(measured, range_min, range_max);
+                scan_ranges[i] = static_cast<float>(measured);
             }
         }
 
@@ -184,6 +190,10 @@ void LidarSensor::_bind_methods() {
     ClassDB::bind_method(D_METHOD("set_noise_stddev", "p_val"), &LidarSensor::set_noise_stddev);
     ClassDB::bind_method(D_METHOD("get_noise_stddev"), &LidarSensor::get_noise_stddev);
     ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "noise_stddev"), "set_noise_stddev", "get_noise_stddev");
+
+    ClassDB::bind_method(D_METHOD("set_noise_enabled", "p_val"), &LidarSensor::set_noise_enabled);
+    ClassDB::bind_method(D_METHOD("get_noise_enabled"), &LidarSensor::get_noise_enabled);
+    ADD_PROPERTY(PropertyInfo(Variant::BOOL, "noise_enabled"), "set_noise_enabled", "get_noise_enabled");
 
     ClassDB::bind_method(D_METHOD("set_range_max", "p_val"), &LidarSensor::set_range_max);
     ClassDB::bind_method(D_METHOD("get_range_max"), &LidarSensor::get_range_max);

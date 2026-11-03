@@ -24,9 +24,6 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 	var linear = ros_bridge.get_linear_velocity()
 	var angular = ros_bridge.get_angular_velocity()
 	
-	if linear != 0.0 or angular != 0.0:
-		print("Command received - Linear: ", linear, " Angular: ", angular)
-
 	# 1. ROTATION
 	# Isolate the current angular velocity vector and update the Y-axis component
 	var new_angular = state.angular_velocity

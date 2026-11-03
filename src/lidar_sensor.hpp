@@ -27,6 +27,7 @@ private:
     double range_min = 0.1;                 // Minimum detectable distance threshold
     double range_max = 30.0;                // Maximum detectable distance range limit
     double noise_stddev = 0.01;             // Standard deviation for simulated Gaussian measurement noise
+    bool noise_enabled = true;              // Master toggle: enables/disables simulated measurement noise
 
     bool show_debug_laser = false;          // Toggle flag to visualize active rays in the 3D viewport
     MeshInstance3D *debug_mesh_instance = nullptr;
@@ -69,6 +70,9 @@ public:
 
     void set_noise_stddev(double p_val) { noise_stddev = p_val; }
     double get_noise_stddev() const { return noise_stddev; }
+
+    void set_noise_enabled(bool p_val) { noise_enabled = p_val; }
+    bool get_noise_enabled() const { return noise_enabled; }
     
     void set_range_max(double p_val) { range_max = p_val; }
     double get_range_max() const { return range_max; }

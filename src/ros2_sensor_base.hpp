@@ -3,6 +3,7 @@
 
 #include <godot_cpp/classes/node3d.hpp>
 #include <rclcpp/rclcpp.hpp>
+#include "throttle.hpp"
 
 namespace godot {
 
@@ -42,8 +43,12 @@ public:
 protected:
     String topic_name = "/sensor/data";
     double frequency = 25.0; 
-    double time_accumulator = 0.0;
-    
+
+    // Shared throttling helper unifying the accumulate-and-publish logic across all
+    // sensors. Interval = 1/frequency; surplus time carries into the next step so the
+    // effective publish rate stays within ±10% even at low / variable frame rates.
+    Throttle throttle;
+
     // Shared ROS2 node reference obtained from the singleton bridge
     std::shared_ptr<rclcpp::Node> ros_node;
     
